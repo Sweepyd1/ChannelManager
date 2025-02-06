@@ -424,6 +424,12 @@ wheels = [
 ]
 
 [[package]]
+name = "logging"
+version = "0.4.9.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/93/4b/979db9e44be09f71e85c9c8cfc42f258adfb7d93ce01deed2788b2948919/logging-0.4.9.6.tar.gz", hash = "sha256:26f6b50773f085042d301085bd1bf5d9f3735704db9f37c1ce6d8b85c38f2417", size = 96029 }
+
+[[package]]
 name = "magic-filter"
 version = "1.0.12"
 source = { registry = "https://pypi.org/simple" }
@@ -771,6 +777,7 @@ dependencies = [
     { name = "alembic" },
     { name = "asyncpg" },
     { name = "celery" },
+    { name = "logging" },
     { name = "python-dotenv" },
     { name = "redis" },
     { name = "sqlalchemy" },
@@ -784,6 +791,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.14.1" },
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "celery", specifier = ">=5.4.0" },
+    { name = "logging", specifier = ">=0.4.9.6" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "redis", specifier = ">=5.2.1" },
     { name = "sqlalchemy", specifier = ">=2.0.37" },
