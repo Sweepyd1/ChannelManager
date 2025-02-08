@@ -19,7 +19,7 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db_manager import Base
-
+import datetime
 
 class TaskStatus(str, Enum):
     PENDING = "pending"
@@ -53,13 +53,13 @@ class ChannelGroup(BaseModel):
     __tablename__ = "channel_groups"
     __table_args__ = {"comment": "Группы каналов для массовой рассылки"}
 
-    id: Mapped[int] = mapped_column(Seri, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     user_id: Mapped[int] = mapped_column(BIGINT, ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="channel_groups")
     channels: Mapped[List["Channel"]] = relationship(back_populates="group")
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=func.now()
+        TIMESTAMP(timezone=True), server_default=None
     )
 
 
@@ -79,7 +79,7 @@ class Channel(BaseModel):
     user: Mapped["User"] = relationship(back_populates="channels")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     added_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=func.now()
+        TIMESTAMP(timezone=True), server_default=None
     )
 
 
@@ -101,7 +101,7 @@ class Post(BaseModel):
     user_id: Mapped[int] = mapped_column(BIGINT, ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="posts")
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=func.now()
+        TIMESTAMP(timezone=True), server_default=None
     )
     scheduled_time: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True))
     tasks: Mapped[List["Task"]] = relationship(back_populates="post")

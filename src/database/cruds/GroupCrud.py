@@ -1,13 +1,13 @@
 from typing import TYPE_CHECKING, List
 
-from CommonCrud import CommonCRUD
+
 
 from ..db_manager import DatabaseManager
 from ..models import User, Task, ChannelGroup
 from sqlalchemy import select
 
 if TYPE_CHECKING:
-    from CommonCrud import CommonCRUD
+    from .CommonCrud import CommonCRUD
 
 class GroupCRUD:
     db: DatabaseManager

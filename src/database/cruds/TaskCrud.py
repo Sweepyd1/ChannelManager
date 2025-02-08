@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 from ..db_manager import DatabaseManager
 
 if TYPE_CHECKING:
-    from CommonCrud import CommonCRUD
+    from .CommonCrud import CommonCRUD
     
 class TaskCRUD:
     db: DatabaseManager

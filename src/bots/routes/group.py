@@ -1,15 +1,13 @@
 import re
-from asyncio import exceptions
 
 from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from config import bot
+from config import bot, db
 
 from ..states.state import NewGroupState
-from .base import process_channel_info
 
 group_router = Router()
 
@@ -39,6 +37,7 @@ async def get_name_for_group(message: types.Message, state: FSMContext):
 async def get_channels_for_group(message: types.Message, state: FSMContext):
     try:
         input_text = message.text
+        await state.update_data(channels=message.text)
         parts = re.split(r'[\s,]+', input_text)
      
         
@@ -86,6 +85,10 @@ async def get_channels_for_group(message: types.Message, state: FSMContext):
                     f"Название: {chat.title}\n"
                     f"Описание: {chat.description}\n\n"
                 )
+            name, channels = await get_state_data(state)
+            print(name, channels)
+            await db.groups.create_new_group(name, channels,message.from_user.id)
+                
         
         if errors:
             response.append("\n❌ Ошибки при обработке:\n")

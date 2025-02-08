@@ -5,7 +5,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, Message
 
-from config import bot, description
+from config import bot, description, db
 
 from ..states.state import RegistrationStates
 
@@ -15,9 +15,13 @@ first_channel_id = "-1002401238189"
 
 @base_router.message(CommandStart())
 async def send_welcome(message: Message):
-    await message.reply("Hello! Starting task...")
-    channel_id = first_channel_id
-    await bot.send_message(chat_id=channel_id, text="Привет, это тестовое сообщение!")
+    # await message.reply("Hello! Starting task...")
+    user = await db.users.new_user(message.from_user.id)
+    if user:
+        message.reply("такой пользовател уже существует")
+        await bot.send_message(chat_id=first_channel_id, text="такой пользовател уже существует")
+        return
+    await bot.send_message(chat_id=first_channel_id, text="регистрация нового пользоватекля прошла успешан")
 
 
 @base_router.message(Command('showchannelid'))
