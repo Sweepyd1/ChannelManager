@@ -10,11 +10,13 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from config import bot
 from bots.routes.base import base_router
 from bots.routes.group import group_router
+from bots.routes.tasks import tasks
 
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 dp.include_router(base_router)
 dp.include_router(group_router)
+dp.include_router(tasks)
 
 async def main():
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)

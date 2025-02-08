@@ -53,7 +53,7 @@ class ChannelGroup(BaseModel):
     __tablename__ = "channel_groups"
     __table_args__ = {"comment": "Группы каналов для массовой рассылки"}
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Seri, primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     user_id: Mapped[int] = mapped_column(BIGINT, ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="channel_groups")
