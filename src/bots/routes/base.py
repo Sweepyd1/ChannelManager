@@ -64,7 +64,8 @@ async def process_channel_info(message: types.Message, state: FSMContext,):
         await message.reply(
             f"✅ ID: <code>{chat.id}</code>\n"
             f"👥 Название: {chat.title}\n"
-            f"📝 Описание: {chat.description}", 
+            f"📝 Описание: {chat.description}"
+            f"📝 проверка: {chat.linked_chat_id}", 
             parse_mode="HTML"
         )
         

@@ -14,6 +14,7 @@ from sqlalchemy import (
     Integer,
     String,
     text,
+    func,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -58,11 +59,7 @@ class ChannelGroup(BaseModel):
     user_id: Mapped[int] = mapped_column(BIGINT, ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="channel_groups")
     channels: Mapped[List["Channel"]] = relationship(back_populates="group")
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=None
-    )
-
-
+  
 class Channel(BaseModel):
     __tablename__ = "channels"
     __table_args__ = (
@@ -78,10 +75,7 @@ class Channel(BaseModel):
     user_id: Mapped[int] = mapped_column(BIGINT, ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="channels")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    added_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=None
-    )
-
+   
 
 class Post(BaseModel):
     __tablename__ = "posts"
@@ -94,18 +88,18 @@ class Post(BaseModel):
         server_default=text("gen_random_uuid()"),
     )
     content: Mapped[dict] = mapped_column(
-        JSON, 
+        JSON,
         comment="Структура: {'text': str, 'media': list, 'buttons': list}"
     )
     status: Mapped[str] = mapped_column(String(20), default=TaskStatus.PENDING)
     user_id: Mapped[int] = mapped_column(BIGINT, ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="posts")
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=None
+        TIMESTAMP(timezone=True),
+        server_default=func.now()  # Время создания поста
     )
     scheduled_time: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True))
     tasks: Mapped[List["Task"]] = relationship(back_populates="post")
-
 
 class Task(BaseModel):
     __tablename__ = "tasks"

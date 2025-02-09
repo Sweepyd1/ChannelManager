@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 from database.cruds.CommonCrud import CommonCRUD
 from database.db_manager import DatabaseManager
-
+from core.parser.Parser import Parser
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -19,6 +19,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 db_manager = DatabaseManager(DATABASE_URL)
 db = CommonCRUD(db_manager)
+parser = Parser()
+
 print("coonect")
 description = (
         "Этот бот создан для управления и автоматизации процессов в более чем 1000 каналах одновременно.\n"
