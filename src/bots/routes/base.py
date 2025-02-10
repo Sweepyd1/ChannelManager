@@ -5,7 +5,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, Message
 
-from config import bot, description, db
+from config import bot, db, description
 
 from ..states.state import RegistrationStates
 

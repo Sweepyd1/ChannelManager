@@ -1,10 +1,10 @@
 import logging
 import re
 
-from aiogram import Router, types
+from aiogram import F, Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from config import bot, db
 
@@ -20,16 +20,40 @@ async def get_state_data(state:FSMContext):
     channels = group_data.get("channels")
     return name, list(channels.split())
 
-
-
-    
-
 @group_router.message(Command('newgroup'))
 async def create_new_group(message: types.Message, state: FSMContext):
     await message.reply("Придумайте название для вашей группы")
-    await state.set_state(NewGroupState.waiting_for_name) 
+    await state.set_state(NewGroupState.waiting_for_name)
 
 
+@group_router.message(Command('getmygroups'))
+async def get_my_groups(message: types.Message, state: FSMContext):
+    groups = await db.groups.get_my_group(message.from_user.id)
+  
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(
+        text=group.name, 
+        callback_data=f"view_{group.id}"  
+    )] for group in groups
+])
+    
+    await message.answer("Список ваших груп:", reply_markup=keyboard)
+    
+
+@group_router.callback_query(F.data.startswith("view_"))  
+async def handle_group_selection(callback: types.CallbackQuery):
+    try:
+        group_id = int(callback.data.split("_")[1])  
+        channels = await db.groups.get_channels_for_group(group_id)
+
+        channels_list = "\n".join([f"• {ch.name}" for ch in channels])
+        text = f"Каналы в группе:\n{channels_list}"
+        
+        await callback.message.edit_text(text)
+        await callback.answer()
+        
+    except Exception as e:
+        await callback.answer(f"Ошибка: {str(e)}", show_alert=True)
 
 @group_router.message(NewGroupState.waiting_for_name)
 async def get_name_for_group(message: types.Message, state: FSMContext):

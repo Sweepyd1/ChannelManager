@@ -8,3 +8,10 @@ class RegistrationStates(StatesGroup):
 class NewGroupState(StatesGroup):
     waiting_for_name = State()
     waiting_for_channel = State()
+
+
+
+class NewPostForGroup(StatesGroup):
+    waiting_for_post = State()
+    group_id = State()
+    

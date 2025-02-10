@@ -23,6 +23,7 @@ class GroupCRUD:
         links: List[str], 
         user_id: int
     ) -> ChannelGroup:
+        
         async with self.db.get_session() as session:
             async with session.begin():
  
@@ -82,9 +83,20 @@ class GroupCRUD:
             return link[1:].split()[0].strip()
         raise ValueError("Некорректный формат ссылки")
                 
-    async def get_my_group(self, user_id:int):
+    async def get_my_group(self, user_id: int) -> List[ChannelGroup]:
         async with self.db.get_session() as session:
-            groups = await session.execute(select(ChannelGroup).where(User.id == user_id))
-            return groups.scalars().all()
+        
+            query = select(ChannelGroup).where(ChannelGroup.user_id == user_id)
+            result = await session.execute(query)
+            return result.scalars().all()
+        
+    async def get_channels_for_group(self, group_id, user_id)->List[Channel]:
+         async with self.db.get_session() as session:
+            query = select(Channel).where(Channel.group_id == group_id, Channel.user_id==user_id)
+            result = await session.execute(query)
+            return result.scalars().all()
+
+        
+    
             
     
