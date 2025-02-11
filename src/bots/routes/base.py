@@ -50,6 +50,7 @@ async def process_channel_info(message: types.Message, state: FSMContext,):
         print(f"username is {username}")
 
         chat = await bot.get_chat(username)
+        
         if chat.type != "channel":
             await message.reply("❌ Это не канал!")
             await state.clear()
