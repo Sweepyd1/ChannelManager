@@ -22,6 +22,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .db_manager import Base
 import datetime
 
+
 class TaskStatus(str, Enum):
     PENDING = "pending"
     SENT = "sent"
@@ -43,7 +44,7 @@ class User(BaseModel):
         BIGINT,
         primary_key=True,
         index=True,
-        comment="Идентификатор пользователя в Telegram"
+        comment="Идентификатор пользователя в Telegram",
     )
     posts: Mapped[List["Post"]] = relationship(back_populates="user")
     channels: Mapped[List["Channel"]] = relationship(back_populates="user")
@@ -59,7 +60,8 @@ class ChannelGroup(BaseModel):
     user_id: Mapped[int] = mapped_column(BIGINT, ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="channel_groups")
     channels: Mapped[List["Channel"]] = relationship(back_populates="group")
-  
+
+
 class Channel(BaseModel):
     __tablename__ = "channels"
     __table_args__ = (
@@ -70,12 +72,14 @@ class Channel(BaseModel):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(255))
     telegram_chat_id: Mapped[int] = mapped_column(BIGINT, unique=True)
-    group_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("channel_groups.id"))
+    group_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("channel_groups.id")
+    )
     group: Mapped[Optional["ChannelGroup"]] = relationship(back_populates="channels")
     user_id: Mapped[int] = mapped_column(BIGINT, ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="channels")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-   
+
 
 class Post(BaseModel):
     __tablename__ = "posts"
@@ -88,18 +92,18 @@ class Post(BaseModel):
         server_default=text("gen_random_uuid()"),
     )
     content: Mapped[dict] = mapped_column(
-        JSON,
-        comment="Структура: {'text': str, 'media': list, 'buttons': list}"
+        JSON, comment="Структура: {'text': str, 'media': list}"
     )
     status: Mapped[str] = mapped_column(String(20), default=TaskStatus.PENDING)
     user_id: Mapped[int] = mapped_column(BIGINT, ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="posts")
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
-        server_default=func.now()  # Время создания поста
+        server_default=func.now(),  # Время создания поста
     )
     scheduled_time: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True))
     tasks: Mapped[List["Task"]] = relationship(back_populates="post")
+
 
 class Task(BaseModel):
     __tablename__ = "tasks"

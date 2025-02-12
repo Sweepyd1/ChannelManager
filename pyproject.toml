@@ -8,6 +8,7 @@ dependencies = [
     "aiogram>=3.17.0",
     "aioredis>=2.0.1",
     "alembic>=1.14.1",
+    "apscheduler>=3.11.0",
     "asyncpg>=0.30.0",
     "celery>=5.4.0",
     "logging>=0.4.9.6",
