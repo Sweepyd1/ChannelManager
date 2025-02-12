@@ -2,7 +2,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
 from datetime import datetime, timedelta
 
-
+ 
 async def my_task():
     """
     Асинхронная задача, которую нужно запланировать.

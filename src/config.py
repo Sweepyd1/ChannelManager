@@ -13,7 +13,6 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 TOKEN = os.getenv("TOKEN")
 
-
 bot = Bot(token=TOKEN)
 
 

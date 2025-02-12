@@ -16,6 +16,7 @@ from config import bot, db, description
 from ..states.state import NewPostForGroup, RegistrationStates, ScheduleNewPostForGroup
 from ..utils.AlbumMiddleware import AlbumMiddleware
 from config import scheduler
+
 tasks = Router()
 tasks.message.middleware(AlbumMiddleware())
 
@@ -142,7 +143,7 @@ async def get_post_for_group(
 @tasks.callback_query(F.data.startswith("schedule_"))
 async def schedule_post_for_froup(callback: types.CallbackQuery, state: FSMContext):
     try:
-        text = "будет запланирован пост для группы...Скидывай время"#указать в каком виде кидать время
+        text = "будет запланирован пост для группы...Скидывай время"  # указать в каком виде кидать время
         await state.set_state(ScheduleNewPostForGroup.waiting_for_date)
 
         await callback.message.edit_text(text)

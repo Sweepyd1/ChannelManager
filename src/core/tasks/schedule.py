@@ -12,12 +12,16 @@ class Schedule:
         self.scheduler = AsyncIOScheduler()
         self.scheduler_started = False
 
-    async def new_task(self, task, *args, **kwargs):
+    async def start(self):
+        self.scheduler.start()
+
+    async def _new_task(self, task, *args, **kwargs):
         """Добавляет и запускает задачу в планировщик."""
+
         self.scheduler.add_job(
             task,
             "date",
-            run_date=datetime.now() + timedelta(seconds=10),
+            run_date=datetime.now() + timedelta(seconds=15),
             args=args,
             kwargs=kwargs,
         )
@@ -25,24 +29,19 @@ class Schedule:
         if not self.scheduler_started:
             self.scheduler.start()
             self.scheduler_started = True
-            print("Планировщик запущен, ждем выполнения задачи...")
+        print("Планировщик запущен, ждем выполнения задачи...")
 
     def new_scheduler(self):
-        """Декоратор для добавления функции в планировщик."""
-
         def wrapper(func: Callable) -> Callable:
             @functools.wraps(func)
             async def wrapped(*args, **kwargs) -> Any:
-                await self.new_task(
-                    func, *args, **kwargs
-                )  # Передаем аргументы в new_task
-                # return await func(*args, **kwargs)
+                await self._new_task(func, *args, **kwargs)
 
             return wrapped
 
         return wrapper
 
-    async def stop_scheduler(self):
+    async def _stop_scheduler(self):
         """Останавливает планировщик."""
         if self.scheduler_started:
             self.scheduler.shutdown()
