@@ -4,7 +4,7 @@ import os
 from database.cruds.CommonCrud import CommonCRUD
 from database.db_manager import DatabaseManager
 from core.parser.Parser import Parser
-from core.tasks.schedule import Schedule
+from core.tasks.AsyncWorker import AsyncWorker
 
 
 load_dotenv()
@@ -21,7 +21,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 db_manager = DatabaseManager(DATABASE_URL)
 db = CommonCRUD(db_manager)
 
-scheduler = Schedule()
+worker = AsyncWorker(db, bot)
 parser = Parser()
 
 print("coonect")

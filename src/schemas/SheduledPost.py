@@ -1,10 +1,12 @@
+from dataclasses import dataclass
 from datetime import datetime
 from typing import List
 
 from pydantic import BaseModel
 
-
-class Post(BaseModel):
+@dataclass
+class SheduledPost:
+    task_id:str
     description:str 
     media:List[str]
-    time_to_publish:datetime
+    channel:str

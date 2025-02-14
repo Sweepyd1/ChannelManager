@@ -1,21 +1,20 @@
-from typing import Optional
+
+from datetime import datetime
 
 from aiogram import F, Router, types
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
-    CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
 )
 from aiogram.utils.media_group import MediaGroupBuilder
 
-from config import bot, db, description
+from config import db
 
-from ..states.state import NewPostForGroup, RegistrationStates, ScheduleNewPostForGroup
+from ..states.state import NewPostForGroup, ScheduleNewPostForGroup
 from ..utils.AlbumMiddleware import AlbumMiddleware
-from config import scheduler
 
 tasks = Router()
 tasks.message.middleware(AlbumMiddleware())
@@ -59,7 +58,6 @@ async def handle_group_for_task(callback: types.CallbackQuery, state: FSMContext
                 ],
             ]
         )
-
         await callback.message.edit_text(text, reply_markup=keyboard)
         await callback.answer()
 
@@ -143,7 +141,7 @@ async def get_post_for_group(
 @tasks.callback_query(F.data.startswith("schedule_"))
 async def schedule_post_for_froup(callback: types.CallbackQuery, state: FSMContext):
     try:
-        text = "будет запланирован пост для группы...Скидывай время"  # указать в каком виде кидать время
+        text = "будет запланирован пост для группы...Скидывай время в таком формате 2025-03-15 14:30"  # указать в каком виде кидать время
         await state.set_state(ScheduleNewPostForGroup.waiting_for_date)
 
         await callback.message.edit_text(text)
@@ -161,62 +159,109 @@ async def handle_new_schedule_date(
     await state.set_state(ScheduleNewPostForGroup.waiting_for_post)
     await message.answer("окей, теперь пост")
 
-
 @tasks.message(ScheduleNewPostForGroup.waiting_for_post)
-@scheduler.new_scheduler()
 async def handle_new_schedule_post(
-    message: types.Message, state: FSMContext, album: list = None
+    message: types.Message, 
+    state: FSMContext, 
+    album: list = None
 ):
-    data = await state.get_data()
-    group_id = data.get("group_id")
-    channels = await db.groups.get_channels_for_group(
-        group_id=group_id, user_id=message.from_user.id
-    )
+    try:
+  
+        media_ids = []
+        caption = ''
+        content_type = None
 
-    caption = ""
-    if album:
-        caption = album[0].caption or ""
-    else:
-        caption = message.caption or message.text or ""
+   
+        if album:
+      
+            for item in album:
+                if item.photo:
+                    media_ids.append(item.photo[-1].file_id)
+                    content_type = 'photo'
+                elif item.video:
+                    media_ids.append(item.video.file_id)
+                    content_type = 'video'
+                elif item.document:
+                    media_ids.append(item.document.file_id)
+                    content_type = 'document'
+                elif item.audio:
+                    media_ids.append(item.audio.file_id)
+                    content_type = 'audio'
+            
+       
+            caption = album[0].caption or ""
 
-    for channel in channels:
+ 
+        else:
+            content_type = message.content_type
+            if message.photo:
+                media_ids.append(message.photo[-1].file_id)
+            elif message.video:
+                media_ids.append(message.video.file_id)
+            elif message.document:
+                media_ids.append(message.document.file_id)
+            elif message.audio:
+                media_ids.append(message.audio.file_id)
+            
+            caption = message.caption or message.text or ""
+
+        if not media_ids and not caption.strip():
+            await message.answer("❌ Пост должен содержать текст или медиа!")
+            return
+
+    
+        post_content = {
+            "caption": caption.strip(),
+            "media": media_ids,
+            "content_type": content_type
+        }
+
+        data = await state.get_data()
+        group_id = data.get("group_id")
+        date_str = data.get("date")
+
         try:
-            chat_id = channel.telegram_chat_id
-            if album:
-                media_group = MediaGroupBuilder(caption=caption)
-                for msg in album:
-                    if msg.photo:
-                        file_id = msg.photo[-1].file_id
-                        media_group.add_photo(media=file_id)
-                    elif msg.video:
-                        file_id = msg.video.file_id
-                        media_group.add_video(media=file_id)
-                    elif msg.document:
-                        file_id = msg.document.file_id
-                        media_group.add_document(media=file_id)
-                await message.bot.send_media_group(
-                    chat_id=chat_id, media=media_group.build()
-                )
-            else:
-                if message.photo:
-                    await message.bot.send_photo(
-                        chat_id=chat_id,
-                        photo=message.photo[-1].file_id,
-                        caption=caption,
-                    )
-                elif message.video:
-                    await message.bot.send_video(
-                        chat_id=chat_id, video=message.video.file_id, caption=caption
-                    )
-                elif message.document:
-                    await message.bot.send_document(
-                        chat_id=chat_id,
-                        document=message.document.file_id,
-                        caption=caption,
-                    )
-                else:
-                    await message.bot.send_message(chat_id=chat_id, text=caption)
-        except Exception as e:
-            print(f"Ошибка отправки в канал {chat_id}: {e}")
+            scheduled_time = datetime.strptime(date_str, "%Y-%m-%d %H:%M")
+            if scheduled_time < datetime.now():
+                await message.answer("❌ Время публикации не может быть в прошлом!")
+                return
+        except (ValueError, TypeError):
+            await message.answer("❌ Некорректный формат даты!")
+            return
 
-    await state.clear()
+
+        channels = await db.groups.get_channels_for_group(
+            group_id=group_id, 
+            user_id=message.from_user.id
+        )
+        if not channels:
+            await message.answer("❌ Группа не найдена или нет доступных каналов!")
+            return
+
+      
+        try:
+            await db.tasks.create_new_task(
+                channels=channels,
+                post_content=post_content,
+                user_id=message.from_user.id,
+                scheduled_time=scheduled_time
+            )
+        except Exception as e:
+            print(e)
+            await message.answer("❌ Ошибка при создании задачи!")
+            return
+
+  
+        success_msg = (
+            "✅ Пост успешно запланирован!\n"
+            f"▫️ Дата публикации: {scheduled_time.strftime('%d.%m.%Y %H:%M')}\n"
+            f"▫️ Каналов для публикации: {len(channels)}"
+        )
+        await message.answer(success_msg)
+
+    except Exception as e:
+        print(e)
+        await message.answer("⚠️ Произошла непредвиденная ошибка!")
+    finally:
+        await state.finish()
+
