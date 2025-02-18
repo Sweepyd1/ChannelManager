@@ -91,8 +91,10 @@ async def get_post_for_group(
     caption = ""
     if album:
         caption = album[0].caption or ""
+
+
     else:
-        caption = message.caption or message.text or ""
+        caption = message.caption or message.html_text or ""
 
     for channel in channels:
         try:
@@ -118,6 +120,7 @@ async def get_post_for_group(
                         chat_id=chat_id,
                         photo=message.photo[-1].file_id,
                         caption=caption,
+                        parse_mode="HTML"
                     )
                 elif message.video:
                     await message.bot.send_video(
@@ -130,7 +133,7 @@ async def get_post_for_group(
                         caption=caption,
                     )
                 else:
-                    await message.bot.send_message(chat_id=chat_id, text=caption)
+                    await message.bot.send_message(chat_id=chat_id, text=caption, parse_mode="HTML")
         except Exception as e:
             print(f"Ошибка отправки в канал {chat_id}: {e}")
 

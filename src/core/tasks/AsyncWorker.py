@@ -1,13 +1,13 @@
 import asyncio
 from typing import TYPE_CHECKING
-
+from aiogram import Bot
 from schemas import SheduledPost
 from aiogram.types import InputMediaPhoto, InputMediaVideo, InputMediaDocument
 if TYPE_CHECKING:
     from config import db
 
 class AsyncWorker:
-    def __init__(self, db, bot):
+    def __init__(self, db, bot:Bot):
         self.db = db
         self.bot = bot
      
@@ -45,14 +45,17 @@ class AsyncWorker:
 
                 await self.bot.send_media_group(
                     chat_id=post.channel,
-                    media=media_group
+                    media=media_group,
+                    parse_mode='HTML'
                 )
                 
          
             else:
                 await self.bot.send_message(
                     chat_id=post.channel,
-                    text=post.description
+                    text=post.description,
+                    parse_mode='HTML'
+                    
                 )
 
        
