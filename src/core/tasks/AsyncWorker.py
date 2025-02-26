@@ -14,7 +14,7 @@ class AsyncWorker:
     async def start_database_polling(self,):
         try:
             while True:
-                await asyncio.sleep(45)
+                await asyncio.sleep(5)
                 await self.get_schedule_task()
         except asyncio.CancelledError:
             print("Worker остановлен")
@@ -38,7 +38,8 @@ class AsyncWorker:
 
                     media = media_type(
                         media=file_id,
-                        caption=post.description if idx == 0 else None
+                        caption=post.description if idx == 0 else None,
+                        parse_mode="HTML"
                     )
                     media_group.append(media)
 
@@ -46,7 +47,7 @@ class AsyncWorker:
                 await self.bot.send_media_group(
                     chat_id=post.channel,
                     media=media_group,
-                    parse_mode='HTML'
+                    
                 )
                 
          
@@ -54,7 +55,7 @@ class AsyncWorker:
                 await self.bot.send_message(
                     chat_id=post.channel,
                     text=post.description,
-                    parse_mode='HTML'
+                    
                     
                 )
 

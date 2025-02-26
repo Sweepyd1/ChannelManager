@@ -1,6 +1,6 @@
 
 from datetime import datetime
-
+import markdown
 from aiogram import F, Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -10,10 +10,10 @@ from aiogram.types import (
     Message,
 )
 from aiogram.utils.media_group import MediaGroupBuilder
-
+from aiogram.types import InputMediaPhoto
 from config import db
 
-from ..states.state import NewPostForGroup, ScheduleNewPostForGroup
+from ..states.state import NewPostForGroup, ScheduleNewPostForGroup, CustomCaption
 from ..utils.AlbumMiddleware import AlbumMiddleware
 
 tasks = Router()
@@ -54,6 +54,11 @@ async def handle_group_for_task(callback: types.CallbackQuery, state: FSMContext
                 [
                     InlineKeyboardButton(
                         text="⏰ Запланировать", callback_data=f"schedule_{group_id}"
+                    )
+                ],
+                 [
+                    InlineKeyboardButton(
+                        text="📝 Создать пост с кастомными caption", callback_data=f"create_custom_post_{group_id}"
                     )
                 ],
             ]
@@ -268,3 +273,157 @@ async def handle_new_schedule_post(
     finally:
         await state.finish()
 
+############## планирование постов с кастомными caption########
+@tasks.callback_query(F.data.startswith("create_custom_post_"))
+async def create_custom_post_for_group(callback: types.CallbackQuery, state: FSMContext):
+    try:
+        await callback.message.answer("скидывайте ваш кастомный текст")
+        await state.set_state(CustomCaption.waiting_for_custom_caption)
+    except Exception as e:
+        await callback.answer(f"Ошибка: {str(e)}", show_alert=True)
+
+
+@tasks.message(CustomCaption.waiting_for_custom_caption)
+async def get_custom_caption(message: types.Message, state:FSMContext):
+    html_text = message.html_text
+    # print(html_text)
+    try:
+        # await message.answer(html_text, parse_mode="HTML") 
+        await message.answer("теперь скидывайте изображение")
+        await state.update_data(caption=html_text)
+        await state.set_state(CustomCaption.waiting_for_images)
+    except Exception as e:
+        await message.answer(f"Ошибка при обработке Markdown: {e}")
+
+
+@tasks.message(CustomCaption.waiting_for_images)
+async def get_custom_images( 
+    message: types.Message, 
+    state: FSMContext, 
+    album: list = None
+):
+    try:
+  
+        media_ids = []
+        caption = ''
+        content_type = None
+        
+        if album:
+      
+            for item in album:
+                if item.photo:
+                    media_ids.append(item.photo[-1].file_id)
+                    content_type = 'photo'
+                elif item.video:
+                    media_ids.append(item.video.file_id)
+                    content_type = 'video'
+                elif item.document:
+                    media_ids.append(item.document.file_id)
+                    content_type = 'document'
+                elif item.audio:
+                    media_ids.append(item.audio.file_id)
+                    content_type = 'audio'
+
+        else:
+            content_type = message.content_type
+            if message.photo:
+                media_ids.append(message.photo[-1].file_id)
+            elif message.video:
+                media_ids.append(message.video.file_id)
+            elif message.document:
+                media_ids.append(message.document.file_id)
+            elif message.audio:
+                media_ids.append(message.audio.file_id)
+            
+        print(media_ids) 
+        await state.update_data(images=media_ids)
+        await state.set_state(CustomCaption.waiting_for_date)   
+        text = "будет запланирован пост для группы...Скидывай время в таком формате 2025-03-15 14:30"
+        await message.answer(text=text)
+
+
+        if not media_ids and not caption.strip():
+            await message.answer("❌ Пост должен содержать текст или медиа!")
+            return
+
+    except Exception as e:
+        print(e)
+        await message.answer("⚠️ Произошла непредвиденная ошибка!")
+
+@tasks.message(CustomCaption.waiting_for_date)
+async def get_custom_date(message: Message, state:FSMContext):
+    await state.update_data(date=message.text)
+    data = await state.get_data()
+    media = data.get("images")
+    date = data.get("date")
+    caption = data.get("caption")
+    group_id = data.get("group_id")
+
+    
+    
+  
+    media_group = []
+    for index, photo_id in enumerate(media):
+        
+        media_item = InputMediaPhoto(
+            media=photo_id,
+            caption=caption if index == 0 else None,
+            parse_mode="HTML"
+        )
+        media_group.append(media_item)
+    
+    post_content = {
+            "caption": caption,
+            "media": media,
+            "content_type": "photo"
+        }
+
+  
+    try:
+            scheduled_time = datetime.strptime(date, "%Y-%m-%d %H:%M")
+            if scheduled_time < datetime.now():
+                await message.answer("❌ Время публикации не может быть в прошлом!")
+                return
+    except (ValueError, TypeError):
+            await message.answer("❌ Некорректный формат даты!")
+            return
+
+
+    channels = await db.groups.get_channels_for_group(
+            group_id=group_id, 
+            user_id=message.from_user.id
+        )
+    if not channels:
+            await message.answer("❌ Группа не найдена или нет доступных каналов!")
+            return
+
+      
+    try:
+            await db.tasks.create_new_task(
+                channels=channels,
+                post_content=post_content,
+                user_id=message.from_user.id,
+                scheduled_time=scheduled_time
+            )
+    except Exception as e:
+            print(e)
+            await message.answer("❌ Ошибка при создании задачи!")
+            return
+
+  
+    success_msg = (
+            "✅ Пост успешно запланирован!\n"
+            f"▫️ Дата публикации: {scheduled_time.strftime('%d.%m.%Y %H:%M')}\n"
+            f"▫️ Каналов для публикации: {len(channels)}"
+        )
+    await message.answer(success_msg)
+
+ 
+    
+    # Отправляем альбом
+    await message.answer("ваш пост выглядит так")
+    await message.answer_media_group(media_group)
+    await message.answer(f"пост запланирован в {date} ")
+    await state.finish()
+
+   

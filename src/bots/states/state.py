@@ -19,3 +19,10 @@ class ScheduleNewPostForGroup(StatesGroup):
     waiting_for_post = State()
     group_id = State()
     waiting_for_date = State()
+
+
+class CustomCaption(StatesGroup):
+    waiting_for_custom_caption = State()
+    waiting_for_images = State()
+    group_id = State()
+    waiting_for_date = State()
